@@ -1,0 +1,233 @@
+# Problem — The Mirrored Corridor Console
+
+In the Clockwork Museum there is a straight corridor with **`n` showcase rooms**, labeled `1..n`.  
+A maintenance console controls a little pointer that *appears* to be in one of these rooms.
+
+The console hides an integer coordinate `z` (it can be any integer, positive or negative). You can press buttons any number of times:
+
+- **Shift+**: `z := z + d`
+- **Shift−**: `z := z − d`
+
+However, the pointer shown to visitors is **not** `z` directly. The museum uses a “mirrored corridor” illusion:
+
+- If `n = 1`, the pointer is always in room `1`.
+- Otherwise, define:
+  - `N = n − 1`
+  - `L = 2N`
+  - `r = z mod L` as a value in `0..L−1` (i.e. `((z % L) + L) % L`)
+  - If `r ≤ N`, the shown room is `r + 1`
+  - Else the shown room is `(L − r) + 1`
+
+Initially, the pointer shows room `x`, meaning the hidden coordinate starts as `z = x − 1`.
+
+For each test case, find the **minimum number of button presses** required so that the shown room becomes `y`, or output `-1` if it can never happen.
+
+---
+
+## Input Format
+- The first line contains an integer `t` — number of test cases.
+- Each test case contains four integers `n x y d`.
+
+Constraints:
+- `1 ≤ t ≤ 2·10^5`
+- `1 ≤ n ≤ 10^18`
+- `1 ≤ x, y ≤ n`
+- `1 ≤ d ≤ 10^18`
+
+## Output Format
+For each test case, print one integer — the minimum number of presses, or `-1` if impossible.
+
+---
+
+## Sample Tests
+
+### Input
+```
+5
+1 1 1 5
+10 2 9 3
+7 3 6 4
+8 8 1 5
+5 4 4 2
+```
+
+### Output
+```
+0
+3
+-1
+7
+0
+```
+
+---
+
+# Editorial
+
+## 1) Turn the “mirrored corridor” into a cycle
+For `n > 1`, let:
+
+- `N = n − 1`
+- `L = 2N`
+
+Only `z mod L` matters, because the display uses `r = z mod L` and then reflects it.
+
+So we can track:
+- `s = z mod L` in `{0, 1, ..., L−1}`
+
+Each button press changes `z` by `±d`, hence `s` moves by:
+- `s -> (s + d) mod L`
+- `s -> (s − d) mod L`
+
+That is movement on a cycle of length `L` with step size `d` (in either direction).
+
+Initial remainder:
+- `s0 = x − 1` (already in `0..N`)
+
+---
+
+## 2) Which remainders show room `y`?
+Let `cy = y − 1` (so `cy ∈ [0..N]`).
+
+From the reflection rule:
+- Room `y` is shown when `r = cy`
+- Or when `r` is the mirrored position: `r = (L − cy) mod L`
+
+So define two target remainders:
+- `t1 = cy`
+- `t2 = (L − cy) % L`
+
+(If `y` is an endpoint, these can be the same.)
+
+We need the minimum presses to reach either `t1` or `t2` from `s0`.
+
+---
+
+## 3) Reachability via gcd, and minimum presses via modular inverse
+Fix one target `t`.
+
+If we press **Shift+** exactly `k` times, then:
+- `s0 + k·d ≡ t (mod L)`
+- `k·d ≡ diff (mod L)` where `diff = (t − s0) mod L`
+
+Let `g = gcd(L, d)`. The congruence is solvable iff:
+- `diff % g == 0`
+
+If not, this target is unreachable.
+
+If solvable, reduce:
+- `M = L / g`
+- `d' = d / g`
+- `diff' = diff / g`
+
+Now `gcd(d', M) = 1`, so `d'` has an inverse modulo `M`. One solution is:
+- `k0 ≡ diff' · inv(d') (mod M)` in `[0..M−1]`
+
+But we may also mix Shift+ and Shift−. On the cycle component, that means we can go “forward” `k0` steps or “backward” `M − k0` steps. Therefore the minimum presses to reach `t` is:
+- `min(k0, M − k0)`
+
+Compute this for both `t1` and `t2`, take the minimum; if both unreachable, answer is `-1`.
+
+---
+
+## 4) Special case
+- If `n == 1`, the shown room is always `1`, so the answer is `0` (since `x=y=1` necessarily).
+
+---
+
+## Complexity
+Each test case uses gcd + extended Euclid (for modular inverse):  
+**`O(log n)`** time, **`O(1)`** extra memory.
+
+---
+
+# Reference Implementation (C++17)
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+using i128 = __int128_t;
+static const long long INF = (long long)4e18;
+
+static long long mod_norm(long long a, long long m) {
+    long long r = a % m;
+    if (r < 0) r += m;
+    return r;
+}
+
+// Extended gcd: returns gcd(a,b) and finds x,y with ax + by = gcd(a,b)
+static long long ext_gcd(long long a, long long b, long long &x, long long &y) {
+    if (b == 0) { x = 1; y = 0; return a; }
+    long long x1, y1;
+    long long g = ext_gcd(b, a % b, x1, y1);
+    x = y1;
+    i128 tmp = (i128)x1 - (i128)(a / b) * (i128)y1; // avoid overflow
+    y = (long long)tmp;
+    return g;
+}
+
+static long long mod_inv(long long a, long long m) {
+    // Inverse of a modulo m, assuming gcd(a,m)=1
+    long long x, y;
+    long long g = ext_gcd(a, m, x, y);
+    (void)g;
+    x %= m;
+    if (x < 0) x += m;
+    return x;
+}
+
+static long long min_presses_to_target(long long L, long long d, long long s0, long long t) {
+    // Minimum number of presses to go from remainder s0 to t on Z_L with steps ±d.
+    // Returns INF if impossible. Assumes L > 0.
+    d %= L;
+    long long diff = mod_norm(t - s0, L);
+    if (diff == 0) return 0;
+    if (d == 0) return INF;
+
+    long long g = std::gcd(L, d);
+    if (diff % g != 0) return INF;
+
+    long long M = L / g;
+    long long dp = d / g;
+    long long diffp = diff / g;
+
+    if (M == 1) return 0; // only one state in this component
+
+    long long inv = mod_inv(mod_norm(dp, M), M);
+    long long k0 = (long long)((i128)diffp * inv % M);
+    return min(k0, M - k0);
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int t;
+    cin >> t;
+    while (t--) {
+        long long n, x, y, d;
+        cin >> n >> x >> y >> d;
+
+        if (n == 1) {
+            cout << 0 << "\n";
+            continue;
+        }
+
+        long long L = 2 * (n - 1);   // L <= 2e18-2 fits in signed 64-bit
+        long long s0 = x - 1;
+        long long cy = y - 1;
+
+        long long t1 = cy;
+        long long t2 = (L - cy) % L;
+
+        long long ans = INF;
+        ans = min(ans, min_presses_to_target(L, d, s0, t1));
+        ans = min(ans, min_presses_to_target(L, d, s0, t2));
+
+        if (ans >= INF / 2) ans = -1;
+        cout << ans << "\n";
+    }
+    return 0;
+}
+```

@@ -1,0 +1,27 @@
+### Corrections / refinements to the earlier reasoning
+
+Most of the reasoning is sound. A few points needed tightening to avoid factual ambiguity:
+
+1) **“Endpoints have only one residue” — true, but the “mirror residue” is not different**
+- For `n > 1`, `L = 2(n-1)`.
+- Room `1` corresponds to residue `0`. The “mirrored” expression `L - (y-1)` for `y=1` gives `L`, which is **congruent to 0 mod L** (but **not** in `[0, L-1]`).  
+  So endpoints are unique **after reducing mod `L`**; careless code that uses `L` as a residue without modding can break.
+- Room `n` corresponds to residue `N = n-1`, and `L - N = N`, so it’s literally the same residue.
+
+2) **Overflow note about `L`**
+- With constraints `n ≤ 1e18`, we have `L = 2(n-1) ≤ 2e18 - 2`, which **fits in signed 64-bit** (`< 9.22e18`).  
+- Overflow risk still exists in:
+  - languages using 32-bit integers by default,
+  - intermediate products if someone computes things like `d * steps` directly in 64-bit,
+  - extended-gcd/multiplication steps if not careful (use 128-bit where needed in C++).
+
+3) **Minimum presses logic (`min(s, M-s)`) — correct, but the premise should be explicit**
+- If `t` can be any integer (positive = Shift+, negative = Shift−), the cost is `|t|`.
+- After reducing by `g = gcd(d, L)`, the solution set for `t` is a residue class mod `M = L/g`.  
+  If a solution `t0` is taken in `[0, M-1]`, the minimal `|t|` is indeed `min(t0, M - t0)` because you can move “around the cycle” in either direction.
+
+4) **Residue multiplicity for middle rooms**
+- For `2 ≤ y ≤ n-1`, the two valid residues are `r1 = y-1` and `r2 = (L - r1) % L` (which lies in `[0, L-1]` and is distinct from `r1`).  
+- For endpoints, using the same formula with `% L` naturally collapses to the single residue, which is a good implementation detail to test.
+
+Everything else in the reasoning (need to test `n=1`, checking both target residues for middle rooms, gcd divisibility reachability, `d % L == 0` “frozen residue”, and off-by-one in the reflection mapping `r ≤ N`) is accurate and should remain part of the test-design rationale.

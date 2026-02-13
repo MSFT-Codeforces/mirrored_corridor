@@ -1,0 +1,14 @@
+{
+  "title": "Mirrored Corridor",
+  "tags": [
+    "Graph Algorithms",
+    "Cryptography and Security",
+    "Algorithm Complexity and Big O Notation",
+    "Functions and Recursion"
+  ],
+  "model_breaking": true,
+  "time": 1,
+  "space": 32,
+  "new_colab_link": "https://colab.research.google.com/drive/1KHmxjVn0C_7XoGV5_XYnTiSMq3gqmlW7",
+  "github_link": "https://github.com/MSFT-Codeforces/mirrored_corridor"
+}

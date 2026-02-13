@@ -1,0 +1,190 @@
+## Problem — Elastic E‑Book Navigation
+
+Vasya is reading an e-book with `n` pages numbered from `1` to `n`. The screen currently shows page `x`, and Vasya wants the screen to show page `y`.
+
+Vasya may press buttons any number of times (possibly zero). There are two buttons:
+
+- **Forward**: add `d` to an internal integer position `z`
+- **Backward**: subtract `d` from `z`
+
+The screen does **not** show `z` directly. Instead, the shown page is obtained by reflecting `z` into the valid page range, like a bouncing ball between the ends.
+
+Formally, let `N = n − 1` and `L = 2N`.
+
+- If `n = 1`, the screen always shows page `1` (no matter what the buttons do).
+- Otherwise, at any moment (initially and after each button press), compute:
+  - `r = z mod L` as a value in `0..L−1`, i.e. `r = ((z % L) + L) % L`
+  - If `r ≤ N`, then the shown page is `r + 1`
+  - Else the shown page is `(L − r) + 1`
+
+Initially, `z = x − 1`, so the screen shows page `x`.
+
+For each test case, compute the minimum number of button presses needed so that the screen shows page `y`, or output `-1` if it is impossible.
+
+---
+
+### Input Format
+The first line contains an integer `t` — the number of test cases.
+
+Each test case contains four integers `n, x, y, d`:
+- `1 ≤ t ≤ 2⋅10^5`
+- `1 ≤ n ≤ 10^18`
+- `1 ≤ x, y ≤ n`
+- `1 ≤ d ≤ 10^18`
+
+### Output Format
+For each test case, print one integer — the minimum number of button presses (possibly `0`) to make the screen show page `y`, or `-1` if impossible.
+
+---
+
+## Editorial
+
+### 1) Reduce the motion to modular arithmetic on a cycle
+For `n > 1`, define:
+- `N = n − 1`
+- `L = 2N`
+
+Only the remainder `z mod L` matters, because the reflection rule depends only on `r ∈ [0, L−1]`.  
+Each press changes `z` by `±d`, therefore on remainders we have transitions:
+- `s -> (s + d) mod L`
+- `s -> (s − d) mod L`
+
+So the internal remainder `s = z mod L` moves on a cycle of length `L` with step size `±d`.
+
+Initially: `s0 = x − 1` (already in `0..N`).
+
+### 2) Which remainders correspond to page `y`?
+Let `cy = y − 1` (so `cy ∈ [0, N]`).
+
+Under the reflection mapping, page `y` is shown exactly when the remainder equals one of:
+- `t1 = cy`
+- `t2 = (L − cy) % L`
+
+(They coincide when `cy = 0` or `cy = N`, i.e. boundary pages.)
+
+Thus, the answer is the minimum number of presses to reach either `t1` or `t2` from `s0` in the graph on `Z_L` with edges `±d`.
+
+If `x == y`, then `s0` already corresponds to `y`, so the answer can be `0`.
+
+### 3) Reachability and minimum presses using gcd and modular inverse
+Fix a target `t`. Let
+- `diff = (t − s0) mod L` in `0..L−1`.
+
+Consider moving by `+d` for `k` presses: we need
+- `k*d ≡ diff (mod L)`.
+
+Let `g = gcd(L, d)`. This congruence is solvable iff:
+- `diff % g == 0`.
+
+If solvable, reduce:
+- `M = L / g`
+- `d' = d / g`
+- `diff' = diff / g`
+
+Now `gcd(d', M) = 1`, so `d'` has a modular inverse modulo `M`. The unique solution in `[0, M−1]` is:
+- `k0 ≡ diff' * inv(d') (mod M)`.
+
+Because each press can be `+d` or `−d`, we can traverse this component in either direction, so the minimum number of presses to reach `t` is:
+- `min(k0, M − k0)`.
+
+Compute this for `t1` and `t2` and take the minimum. If neither is reachable, print `-1`.
+
+### 4) Edge cases
+- If `n == 1`, the screen is always page `1`, so the answer is `0`.
+- If `d % L == 0` (only possible when `n > 1`), then each press keeps `s` unchanged, so only the current page is reachable; the implementation naturally handles this.
+
+### Complexity
+Per test case: `O(log n)` (gcd + extended Euclid).  
+Total: `O(t log n)`.
+
+---
+
+## Reference Implementation (C++17)
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+using i128 = __int128_t;
+static const long long INF = (long long)4e18;
+
+static long long mod_norm(long long a, long long m) {
+    long long r = a % m;
+    if (r < 0) r += m;
+    return r;
+}
+
+static long long ext_gcd(long long a, long long b, long long &x, long long &y) {
+    if (b == 0) { x = 1; y = 0; return a; }
+    long long x1, y1;
+    long long g = ext_gcd(b, a % b, x1, y1);
+    x = y1;
+    // use i128 to avoid overflow in intermediate multiplication
+    i128 tmp = (i128)x1 - (i128)(a / b) * (i128)y1;
+    y = (long long)tmp;
+    return g;
+}
+
+static long long mod_inv(long long a, long long m) {
+    // inverse of a modulo m, assuming gcd(a,m)=1 and m>=2
+    long long x, y;
+    long long g = ext_gcd(a, m, x, y);
+    (void)g; // should be 1
+    x %= m;
+    if (x < 0) x += m;
+    return x;
+}
+
+static long long dist_on_cycle(long long L, long long d, long long s, long long t) {
+    // Minimum presses to go from s to t on Z_L with steps ±d. Requires L>0.
+    d %= L;
+    long long diff = mod_norm(t - s, L);
+    if (diff == 0) return 0;
+    if (d == 0) return INF;
+
+    long long g = std::gcd(L, d);
+    if (diff % g != 0) return INF;
+
+    long long M = L / g;
+    long long dp = d / g;
+    long long diffp = diff / g;
+
+    if (M == 1) return 0;
+
+    long long inv = mod_inv(mod_norm(dp, M), M);
+    long long k0 = (long long)((i128)diffp * inv % M);
+    return min(k0, M - k0);
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int t;
+    cin >> t;
+    while (t--) {
+        long long n, x, y, d;
+        cin >> n >> x >> y >> d;
+
+        if (n == 1) {
+            cout << 0 << "\n";
+            continue;
+        }
+
+        long long L = 2 * (n - 1); // <= 2e18-2, fits in signed 64-bit
+        long long s0 = x - 1;
+        long long cy = y - 1;
+
+        long long t1 = cy;
+        long long t2 = (L - cy) % L;
+
+        long long ans = INF;
+        ans = min(ans, dist_on_cycle(L, d, s0, t1));
+        ans = min(ans, dist_on_cycle(L, d, s0, t2));
+
+        if (ans >= INF / 2) ans = -1;
+        cout << ans << "\n";
+    }
+    return 0;
+}
+```

@@ -1,0 +1,9 @@
+# Metadata
+**Category:** - Coding
+**Topic:** - Competitive Programming
+**Subtopic:** - ["Graph Algorithms", "Cryptography and Security", "Algorithm Complexity and Big O Notation", "Functions and Recursion"]
+**Difficulty:** - Hard
+**Languages:** - C++
+**Number of Approaches:** - 4, ($O(2^K)$ -> $O(L)$ -> $O(\sqrt{L})$ -> $O(\log n)$)
+**Number of Chains:** - 7
+**Model-Breaking:** - True

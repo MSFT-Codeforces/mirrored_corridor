@@ -1,0 +1,225 @@
+**1. Problem Understanding**
+
+A hidden integer coordinate $z$ is updated by button presses:
+- Shift+: $z := z + d$
+- Shift−: $z := z - d$
+
+Visitors do not see $z$ directly. If $n=1$, the shown room is always $1$.
+
+If $n>1$, define $N=n-1$, $L=2N$, and let $r=z \bmod L$ normalized into $[0, L-1]$. The shown room is:
+- $r+1$ if $r \le N$
+- $(L-r)+1$ otherwise
+
+Initially, the system starts at $z_0=x-1$ (so the shown room is $x$). For each test case, we must find the minimum number of presses to make the shown room equal to $y$, or output $-1$ if it is impossible.
+
+**2. Optimal Approach**
+
+1. **Work modulo the period**: for $n>1$, only $z \bmod L$ matters, where $L=2(n-1)$ (this is `cycleLength` in the code). Each press changes the remainder by $\pm d$ modulo $L$.
+
+2. **Convert the target room into target remainders**: let $c=y-1$.
+   The displayed room equals $y$ when the remainder is either:
+   $$t_1=c,\quad t_2=(L-c)\bmod L$$
+   (these correspond to `targetRemainderDirect` and `targetRemainderMirror`).
+
+3. **Solve a linear congruence for each target remainder**: starting from `startRemainder = x-1`, to reach a target remainder $t$ we need:
+   $$k\cdot d \equiv (t-\text{startRemainder}) \pmod{L}$$
+   Let $\text{diff}=(t-\text{startRemainder})\bmod L$ and $g=\gcd(L,d)$. A solution exists iff $\text{diff} \equiv 0 \pmod{g}$.
+
+4. **Compute minimum presses if reachable**: reduce the equation by $g$:
+   $$M=\frac{L}{g},\quad d'=\frac{d}{g},\quad \text{diff}'=\frac{\text{diff}}{g}$$
+   Since $\gcd(d',M)=1$, compute $(d')^{-1}\bmod M$, and obtain:
+   $$k_0 \equiv \text{diff}'\cdot (d')^{-1} \pmod{M}$$
+   Forward needs $k_0$ presses; backward needs $M-k_0$ presses, so the minimum is $\min(k_0, M-k_0)$.
+
+5. Take the minimum over the two targets; if both are unreachable, output $-1$. Handle $n=1$ separately (answer $0$).
+
+**3. Code**
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <numeric>
+
+using SignedInt128 = __int128_t;
+
+static const long long kInfinity = 4000000000000000000LL;
+
+/**
+ * @brief Normalizes a value into the range [0, modulus-1] for modulus > 0.
+ *
+ * @param value The value to normalize.
+ * @param modulus The positive modulus.
+ * @return The normalized remainder in [0, modulus-1].
+ */
+long long normalizeModulo(long long value, long long modulus) {
+    long long remainder = value % modulus;
+    if (remainder < 0) {
+        remainder += modulus;
+    }
+    return remainder;
+}
+
+/**
+ * @brief Computes gcd(firstValue, secondValue) and finds coefficients x,y such that:
+ *        firstValue * x + secondValue * y = gcd(firstValue, secondValue).
+ *
+ * @param firstValue The first integer.
+ * @param secondValue The second integer.
+ * @param coefficientX Output coefficient for firstValue.
+ * @param coefficientY Output coefficient for secondValue.
+ * @return The gcd of firstValue and secondValue.
+ */
+long long extendedGcd(long long firstValue, long long secondValue, long long &coefficientX, long long &coefficientY) {
+    if (secondValue == 0) {
+        coefficientX = 1;
+        coefficientY = 0;
+        return firstValue;
+    }
+
+    long long nextX = 0;
+    long long nextY = 0;
+    long long gcdValue = extendedGcd(secondValue, firstValue % secondValue, nextX, nextY);
+
+    coefficientX = nextY;
+    SignedInt128 updatedY = (SignedInt128)nextX - (SignedInt128)(firstValue / secondValue) * (SignedInt128)nextY;
+    coefficientY = (long long)updatedY;
+
+    return gcdValue;
+}
+
+/**
+ * @brief Computes the modular inverse of value modulo modulus, assuming gcd(value, modulus) = 1.
+ *
+ * @param value The value to invert.
+ * @param modulus The modulus (positive).
+ * @return inverseValue such that (value * inverseValue) % modulus == 1.
+ */
+long long modularInverse(long long value, long long modulus) {
+    long long coefficientX = 0;
+    long long coefficientY = 0;
+    extendedGcd(value, modulus, coefficientX, coefficientY);
+
+    coefficientX %= modulus;
+    if (coefficientX < 0) {
+        coefficientX += modulus;
+    }
+    return coefficientX;
+}
+
+/**
+ * @brief Computes the minimum number of presses to reach targetRemainder from startRemainder
+ *        on the cycle Z_cycleLength, moving by +/- stepSize each press.
+ *
+ * @param cycleLength The modulus L (must be > 0).
+ * @param stepSize The step size d.
+ * @param startRemainder The starting remainder in [0, cycleLength-1].
+ * @param targetRemainder The target remainder in [0, cycleLength-1].
+ * @return The minimum presses, or kInfinity if unreachable.
+ */
+long long minimumPressesToReachRemainder(long long cycleLength,
+                                        long long stepSize,
+                                        long long startRemainder,
+                                        long long targetRemainder) {
+    stepSize = normalizeModulo(stepSize, cycleLength);
+
+    long long difference = normalizeModulo(targetRemainder - startRemainder, cycleLength);
+    if (difference == 0) {
+        return 0;
+    }
+    if (stepSize == 0) {
+        return kInfinity;
+    }
+
+    long long gcdValue = std::gcd(cycleLength, stepSize);
+    if (difference % gcdValue != 0) {
+        return kInfinity;
+    }
+
+    long long reducedModulus = cycleLength / gcdValue;
+    long long reducedStep = stepSize / gcdValue;
+    long long reducedDifference = difference / gcdValue;
+
+    if (reducedModulus == 1) {
+        return 0;
+    }
+
+    long long inverseStep = modularInverse(normalizeModulo(reducedStep, reducedModulus), reducedModulus);
+    long long forwardSteps = (long long)((SignedInt128)reducedDifference * inverseStep % reducedModulus);
+
+    return std::min(forwardSteps, reducedModulus - forwardSteps);
+}
+
+/**
+ * @brief Reads test cases and prints the minimum number of button presses for each case.
+ *
+ * @return 0 on successful execution.
+ */
+int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
+    int testCaseCount = 0;
+    std::cin >> testCaseCount;
+
+    for (int testCaseIndex = 0; testCaseIndex < testCaseCount; ++testCaseIndex) {
+        long long roomCount = 0;
+        long long startRoom = 0;
+        long long targetRoom = 0;
+        long long stepSize = 0;
+        std::cin >> roomCount >> startRoom >> targetRoom >> stepSize;
+
+        if (roomCount == 1) {
+            std::cout << 0 << "\n";
+            continue;
+        }
+
+        long long cycleLength = 2 * (roomCount - 1);
+        long long startRemainder = startRoom - 1;
+        long long targetCoordinate = targetRoom - 1;
+
+        long long targetRemainderDirect = targetCoordinate;
+        long long targetRemainderMirror = (cycleLength - targetCoordinate) % cycleLength;
+
+        long long bestAnswer = kInfinity;
+        bestAnswer = std::min(bestAnswer,
+                              minimumPressesToReachRemainder(cycleLength, stepSize, startRemainder, targetRemainderDirect));
+        bestAnswer = std::min(bestAnswer,
+                              minimumPressesToReachRemainder(cycleLength, stepSize, startRemainder, targetRemainderMirror));
+
+        if (bestAnswer >= kInfinity / 2) {
+            bestAnswer = -1;
+        }
+
+        std::cout << bestAnswer << "\n";
+    }
+
+    return 0;
+}
+```
+
+**4. Code Explanation**
+
+- The code first handles `roomCount == 1`, where the shown room is always $1$, so the answer is always $0$.
+- For `roomCount > 1`, it sets `cycleLength = 2 * (roomCount - 1)`, and tracks only remainders modulo `cycleLength` because the mirrored display depends only on that.
+- Room `targetRoom` corresponds to two possible target remainders:
+  - `targetRemainderDirect = targetRoom - 1`
+  - `targetRemainderMirror = (cycleLength - (targetRoom - 1)) % cycleLength`
+- For each target remainder, `minimumPressesToReachRemainder(...)`:
+  1. Builds the congruence $k \cdot d \equiv \text{difference} \pmod{L}$.
+  2. Uses $\gcd(L, d)$ to decide if the target is reachable.
+  3. If reachable, reduces the equation and computes a modular inverse via `extendedGcd(...)`.
+  4. Converts the forward solution into the true minimum presses by taking $\min(k_0, M-k_0)$.
+
+Example (from the sample): $n=10, x=2, y=9, d=3$  
+Here $L=2(10-1)=18$, `startRemainder = 1`, `targetRemainderDirect = 8`, `targetRemainderMirror = 10`.  
+For `targetRemainderDirect`, $\text{difference}=(8-1)\bmod 18=7$, but $\gcd(18,3)=3$ does not divide $7$, so it is unreachable.  
+For `targetRemainderMirror`, $\text{difference}=(10-1)\bmod 18=9$, and $3$ divides $9$, so it is reachable; the computed minimum presses is $3$, matching the sample output.
+
+**5. Time and Space Complexity**
+
+Per test case:
+- Time complexity: $O(\log n)$ (a constant number of $\gcd$ and extended Euclid computations).
+- Space complexity: $O(1)$ extra space.
+
+**6. Conclusion**
+
+The solution converts the mirrored corridor behavior into modular movement on a cycle and reduces the task to solving a linear congruence. Using $\gcd$ for reachability and modular inverses for the step count yields a fast $O(\log n)$ method that works within the very large constraints.
