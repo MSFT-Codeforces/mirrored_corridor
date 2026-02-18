@@ -167,8 +167,12 @@ int main() {
         long long stepSize = 0;
         std::cin >> roomCount >> startRoom >> targetRoom >> stepSize;
 
+        if (testCaseIndex > 0) {
+            std::cout << "\n";
+        }
+
         if (roomCount == 1) {
-            std::cout << 0 << "\n";
+            std::cout << 0;
             continue;
         }
 
@@ -189,7 +193,7 @@ int main() {
             bestAnswer = -1;
         }
 
-        std::cout << bestAnswer << "\n";
+        std::cout << bestAnswer;
     }
 
     return 0;
@@ -209,16 +213,15 @@ int main() {
   3. If reachable, reduces the equation and computes a modular inverse via `extendedGcd(...)`.
   4. Converts the forward solution into the true minimum presses by taking $\min(k_0, M-k_0)$.
 
-Example (from the sample): $n=10, x=2, y=9, d=3$  
-Here $L=2(10-1)=18$, `startRemainder = 1`, `targetRemainderDirect = 8`, `targetRemainderMirror = 10`.  
-For `targetRemainderDirect`, $\text{difference}=(8-1)\bmod 18=7$, but $\gcd(18,3)=3$ does not divide $7$, so it is unreachable.  
-For `targetRemainderMirror`, $\text{difference}=(10-1)\bmod 18=9$, and $3$ divides $9$, so it is reachable; the computed minimum presses is $3$, matching the sample output.
+Example (first sample): $n=10, x=2, y=10, d=5$  
+Here $L=2(10-1)=18$, `startRemainder = 1`, `targetRemainderDirect = 9`, `targetRemainderMirror = 9`.  
+Both targets are the same (room $10$ sits at the reflection midpoint). $\text{difference}=(9-1)\bmod 18=8$, $\gcd(18,5)=1$ divides $8$, so it is reachable. The modular inverse of $5$ modulo $18$ is $11$, giving $k_0=8\cdot 11\bmod 18=16$, and $\min(16,18-16)=2$, matching the expected output.
 
 **5. Time and Space Complexity**
 
 Per test case:
 - Time complexity: $O(\log n)$ (a constant number of $\gcd$ and extended Euclid computations).
-- Space complexity: $O(1)$ extra space.
+- Space complexity: $O(\log n)$ due to the recursive call stack in `extendedGcd`.
 
 **6. Conclusion**
 

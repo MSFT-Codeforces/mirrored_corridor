@@ -31,32 +31,32 @@ This makes the initial display consistent with the given $x$.
 For each test case, the goal is to reach a state where the shown room equals $y$ using the minimum number of button presses. If no sequence of presses can ever make the shown room equal $y$, the required output is $-1$.
 
 **[atomic_01_07]**
-Because the displayed room is computed from a modulo-and-reflection rule, multiple different values of $z$ may display the same room number. This means the target “display room $y$” can correspond to more than one internal configuration.
+Because the displayed room is computed from a modulo-and-reflection rule, multiple different values of $z$ may display the same room number. This means the target "display room $y$" can correspond to more than one internal configuration.
 
 
 **[section_02]**
-Listing test cases and edge conditions to validate correctness
+Analyzing sample cases and designing test coverage for correctness validation
 
 **[atomic_02_01]**
-Case $n=1$: the display is permanently room $1$. Inputs must have $x=1$ and $y=1$, and the only correct output is $0$ because the target is already shown.
+The first sample ($n=10$, $x=2$, $y=10$, $d=5$) is strategically chosen: the target room $y=n$ sits at the reflection midpoint where both target remainders collapse to the same value $r=N=9$. This forces the solver to handle the reflection mapping correctly and to recognize that the backward direction (Shift−) can be shorter than the forward direction. The second sample ($n=5$, $x=3$, $y=3$, $d=3$) tests the trivial $x=y$ base case, ensuring solutions return $0$ immediately without unnecessary computation.
 
 **[atomic_02_02]**
-Case $x=y$ for any $n$: the answer must be $0$ because no presses are required. This checks that solutions do not force at least one move.
+When $n=1$, the constraints force $x=y=1$ (since $1 \le x, y \le n$), so the shown room is always $1$ and the answer is always $0$. Test cases with $n=1$ and varying $d$ values verify that the solution handles this degenerate corridor without entering modular arithmetic on $L=0$.
 
 **[atomic_02_03]**
-Endpoint target rooms: $y=1$ and $y=n$ can behave differently under the reflection rule than middle rooms. Tests should include both endpoints to ensure the mapping is handled consistently.
+Test cases where $x=y$ for arbitrary $n$ and $d$ verify that the solution short-circuits to $0$ without computing congruences. This catches implementations that mistakenly require at least one press or that fail when the difference is zero.
 
 **[atomic_02_04]**
-Large constraints: with $n$ and $d$ up to $10^{18}$ and $t$ up to $2 \cdot 10^5$, tests must include very large values to expose any approach that tries to iterate over room indices or simulate many presses.
+Endpoint rooms $y=1$ and $y=n$ are special because their two target remainders coincide: for $y=1$, both are $0$; for $y=n$, both are $N$. Middle rooms produce two distinct targets. Test cases should cover both endpoints and interior rooms to verify the solution correctly evaluates both target remainders and takes the minimum.
 
 **[atomic_02_05]**
-Impossible instances: construct cases where stepping by $d$ cannot ever produce a display of $y$. Such tests confirm that the implementation returns $-1$ rather than looping or returning an incorrect finite number.
+With $n$ and $d$ up to $10^{18}$, the cycle length $L=2(n-1)$ can reach roughly $2 \cdot 10^{18}$. Test cases at these extremes expose any approach that iterates over remainders or simulates presses. A well-chosen large case where $\gcd(L, d)$ is large keeps the reduced modulus $M=L/g$ small, making the answer verifiable despite huge inputs.
 
 **[atomic_02_06]**
-Degenerate movement modulo the corridor period: when $d$ is effectively “no movement” with respect to the mapping’s periodicity, the display will never change from the initial shown room. Tests should include scenarios where the output should be $0$ (if $x=y$) and scenarios where it should be $-1$ (if $x \ne y$).
+When $\gcd(L, d)$ does not divide the difference to either target remainder, the congruence has no solution and the answer must be $-1$. For example, with $n=2$ and $d=2$, we get $L=2$ and $d \bmod L = 0$, so presses never change the remainder; if $x \ne y$, the target is unreachable. These cases remain within constraints ($1 \le x, y \le n$, $1 \le d \le 10^{18}$) and verify that the implementation returns $-1$ correctly.
 
 **[atomic_02_07]**
-Negative hidden coordinates: because Shift− can make $z$ negative, tests should implicitly cover sequences where $z$ crosses below $0$. This validates that modulo normalization is interpreted exactly as defined in the statement.
+Sequences where Shift− drives $z$ negative exercise the modulo normalization path. Since the problem defines $r = ((z \% L) + L) \% L$, any correct solution must produce a non-negative remainder from negative inputs. Test cases where the optimal path uses backward presses (making $z$ negative) confirm that this normalization is implemented exactly as specified.
 
 
 **[section_03]**
@@ -72,10 +72,10 @@ This creates a binary branching process: at each press, we choose Shift+ or Shif
 Because $z$ is unbounded, there is no natural maximum depth that guarantees finding a solution if one exists. For an impossible instance, the search has no principled termination condition.
 
 **[atomic_03_04]**
-Adding an arbitrary cutoff “search up to $K$ presses” breaks correctness. A valid instance might require more than $K$ presses, and an invalid instance might not be recognized as impossible within the cutoff.
+Adding an arbitrary cutoff "search up to $K$ presses" breaks correctness. A valid instance might require more than $K$ presses, and an invalid instance might not be recognized as impossible within the cutoff.
 
 **[atomic_03_05]**
-Time complexity with a cutoff is $O(2^K)$ and memory can also become exponential if we store paths or states by depth. This is infeasible under the problem’s constraints.
+Time complexity with a cutoff is $O(2^K)$ and memory can also become exponential if we store paths or states by depth. This is infeasible under the problem's constraints.
 
 **[atomic_03_06]**
 The failure suggests that we must stop reasoning in terms of press sequences and instead reason in terms of states that determine what is displayed, so repeated work is eliminated and cycles can be detected.
@@ -97,7 +97,7 @@ This forms an unweighted graph on up to $L$ nodes.
 A breadth-first search (BFS) from the initial remainder would produce the minimum number of presses to reach any remainder that displays room $y$, because BFS finds shortest paths in unweighted graphs.
 
 **[atomic_04_04]**
-This approach would also correctly conclude “impossible” if BFS exhausts all reachable remainders without encountering a remainder that displays $y$.
+This approach would also correctly conclude "impossible" if BFS exhausts all reachable remainders without encountering a remainder that displays $y$.
 
 **[atomic_04_05]**
 However, $L = 2(n-1)$ can be as large as roughly $2 \cdot 10^{18}$. Iterating over states or maintaining a visited structure of that size is not feasible in either time or memory.
@@ -112,13 +112,13 @@ Applying baby-step giant-step to reduce iteration from linear to square-root (st
 **[atomic_05_01]**
 Since BFS fails due to the huge modulus size, the next idea is to avoid exploring all $L$ states and instead solve the reachability as a modular equation. Reaching a target remainder $t$ from start remainder $s_0$ requires:
 $$s_0 + k \cdot d \equiv t \pmod{L}$$
-for some integer $k$, and the number of presses is related to the smallest “distance” in steps.
+for some integer $k$, and the number of presses is related to the smallest "distance" in steps.
 
 **[atomic_05_02]**
-If we momentarily treat this like a generic “find $k$ such that $k \cdot d \equiv \text{diff} \pmod{L}$” problem (with $\text{diff} = (t - s_0) \bmod L$), a common tool to avoid $O(L)$ trial is baby-step giant-step (BSGS), which can find a solution in about $O(\sqrt{L})$ operations for many modular search tasks.
+If we momentarily treat this like a generic "find $k$ such that $k \cdot d \equiv \text{diff} \pmod{L}$" problem (with $\text{diff} = (t - s_0) \bmod L$), a common tool to avoid $O(L)$ trial is baby-step giant-step (BSGS), which can find a solution in about $O(\sqrt{L})$ operations for many modular search tasks.
 
 **[atomic_05_03]**
-The BSGS-style plan would store a hash table of “baby steps” for roughly $\lceil \sqrt{L} \rceil$ values and then scan “giant steps” to find a match that yields a valid $k$. If successful, this would reduce the brute trial from $O(L)$ to about $O(\sqrt{L})$ time.
+The BSGS-style plan would store a hash table of "baby steps" for roughly $\lceil \sqrt{L} \rceil$ values and then scan "giant steps" to find a match that yields a valid $k$. If successful, this would reduce the brute trial from $O(L)$ to about $O(\sqrt{L})$ time.
 
 **[atomic_05_04]**
 This is strictly more efficient than BFS in Big-O terms:
@@ -169,7 +169,7 @@ Because the problem allows both Shift+ and Shift−, we can move forward or back
 $$\min(k_0, M - k_0)$$
 
 **[atomic_06_07]**
-We evaluate this minimum for both $t_1$ and $t_2$, take the smaller reachable value, and output $-1$ only if neither target is reachable. Complexity per test case is dominated by $\gcd$ and extended Euclid computations, giving $O(\log n)$ time and $O(1)$ extra space, which is strictly better than the prior $O(\sqrt{L})$ approach.
+We evaluate this minimum for both $t_1$ and $t_2$, take the smaller reachable value, and output $-1$ only if neither target is reachable. Complexity per test case is dominated by $\gcd$ and extended Euclid computations, giving $O(\log n)$ time and $O(\log n)$ extra space (due to the recursive call stack in extended Euclid), which is strictly better than the prior $O(\sqrt{L})$ approach.
 
 
 **[section_07]**
@@ -179,13 +179,13 @@ Validating corner cases and ensuring arithmetic robustness in implementation
 Handle $n=1$ separately before any modular computations. For $n=1$, the display is always $1$, and the correct answer is $0$ (the initial and desired rooms must both be $1$).
 
 **[atomic_07_02]**
-Ensure modulo normalization always yields values in $[0, m-1]$ for any modulus $m>0$. This matters because intermediate values like $t - s_0$ can be negative, and the problem’s definition explicitly requires a non-negative remainder.
+Ensure modulo normalization always yields values in $[0, m-1]$ for any modulus $m>0$. This matters because intermediate values like $t - s_0$ can be negative, and the problem's definition explicitly requires a non-negative remainder.
 
 **[atomic_07_03]**
 Do not assume the two targets $t_1$ and $t_2$ are distinct. For certain $y$ values (notably endpoints), $t_1=t_2$, and computing both should still behave correctly without double-counting or special casing.
 
 **[atomic_07_04]**
-Be careful when $d \bmod L = 0$. In that situation, button presses do not change the remainder at all, so the only reachable display is the initial one. The direct congruence logic should reduce to “reachable if and only if $\text{diff}=0$”.
+Be careful when $d \bmod L = 0$. In that situation, button presses do not change the remainder at all, so the only reachable display is the initial one. The direct congruence logic should reduce to "reachable if and only if $\text{diff}=0$".
 
 **[atomic_07_05]**
 Protect against overflow in intermediate arithmetic. Even if $L$ fits in signed 64-bit, products like $\text{diff}' \cdot (d')^{-1}$ or intermediate values inside extended Euclid updates can overflow 64-bit; using 128-bit intermediates for multiplication/subtraction avoids incorrect results.
@@ -197,4 +197,4 @@ Sanity-check behaviors with small manual cases:
 - If a target is declared reachable, substituting the computed $k$ into the congruence should satisfy $s_0 + k \cdot d \equiv t \pmod{L}$.
 
 **[atomic_07_07]**
-Confirm scalability: per test case work is a constant number of $\gcd$ operations and modular inverse computations via extended Euclid, each $O(\log n)$. With $t$ up to $2 \cdot 10^5$, this stays practical in time and uses $O(1)$ extra memory per test case.
+Confirm scalability: per test case work is a constant number of $\gcd$ operations and modular inverse computations via extended Euclid, each $O(\log n)$. With $t$ up to $2 \cdot 10^5$, this stays practical in time and uses $O(\log n)$ extra memory per test case (from the recursive extended Euclid call stack).

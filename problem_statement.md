@@ -1,6 +1,4 @@
-**Mirrored Corridor**
-
-Time Limit: **1 seconds**
+Time Limit: **1 second**
 
 Memory Limit: **32 MB**
 
@@ -37,6 +35,7 @@ For each test case, output one integer — the minimum number of presses, or $-1
 - $1 \le n \le 10^{18}$
 - $1 \le x, y \le n$
 - $1 \le d \le 10^{18}$
+
 **Examples:-**
  - **Input:**
 ```
@@ -68,4 +67,4 @@ so the shown room is $(L-r)+1=(18-11)+1=8$. However, room $10$ is shown when $r=
 $$r = (-9) \bmod 18 = 9,$$
 and since $r\le N$, the shown room is $r+1=10$. Thus the minimum number of presses is $2$.
 
-In the first example, $x=y=3$, so the shown room is already $3$ at the start (with $z=x-1=2$). Therefore, no button press is needed and the answer is $0$.
+In the second example, $x=y=3$, so the shown room is already $3$ at the start (with $z=x-1=2$). Therefore, no button press is needed and the answer is $0$.

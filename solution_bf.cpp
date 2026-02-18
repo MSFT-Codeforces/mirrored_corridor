@@ -38,7 +38,8 @@ int main() {
 
         // Special case: with one room, the shown room is always 1.
         if (n == 1) {
-            cout << 0 << "\n";
+            cout << 0;
+            if (t > 0) cout << "\n";
             continue;
         }
 
@@ -81,10 +82,11 @@ int main() {
         }
 
         if (best == inf) {
-            cout << -1 << "\n";
+            cout << -1;
         } else {
-            cout << best << "\n";
+            cout << best;
         }
+        if (t > 0) cout << "\n";
     }
 
     return 0;

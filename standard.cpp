@@ -130,8 +130,12 @@ int main() {
         long long stepSize = 0;
         std::cin >> roomCount >> startRoom >> targetRoom >> stepSize;
 
+        if (testCaseIndex > 0) {
+            std::cout << "\n";
+        }
+
         if (roomCount == 1) {
-            std::cout << 0 << "\n";
+            std::cout << 0;
             continue;
         }
 
@@ -152,7 +156,7 @@ int main() {
             bestAnswer = -1;
         }
 
-        std::cout << bestAnswer << "\n";
+        std::cout << bestAnswer;
     }
 
     return 0;
