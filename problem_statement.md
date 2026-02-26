@@ -20,14 +20,17 @@ Initially, the shown room is $x$, which means the hidden coordinate starts as $z
 
 For each test case, find the minimum number of button presses needed so that the shown room becomes $y$. If it is impossible, output $-1$.
 
+
 **Input Format:-**
 
 The first line contains an integer $t$ — the number of test cases.  
 Each test case contains four integers $n, x, y, d$.
 
+
 **Output Format:-**
 
 For each test case, output one integer — the minimum number of presses, or $-1$ if impossible.
+
 
 **Constraints:-**
 
@@ -35,6 +38,7 @@ For each test case, output one integer — the minimum number of presses, or $-1
 - $1 \le n \le 10^{18}$
 - $1 \le x, y \le n$
 - $1 \le d \le 10^{18}$
+
 
 **Examples:-**
  - **Input:**
@@ -58,6 +62,7 @@ For each test case, output one integer — the minimum number of presses, or $-1
 ```
 0
 ```
+
 
 **Note:-**
 
