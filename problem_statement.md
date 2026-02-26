@@ -68,6 +68,6 @@ For each test case, output one integer — the minimum number of presses, or $-1
 
 In the first example, $n=10$ so $N=n-1=9$ and $L=2N=18$. Initially $x=2$, hence $z=x-1=1$ (shown room $2$). Room $10$ is shown when $r=N=9$. Press "Shift−" twice: $z=1-2\cdot 5=-9$, so
 $$r = (-9) \bmod 18 = 9,$$
-and since $r\le N$, the shown room is $r+1=10$. Thus the minimum number of presses is $2$. We can see that it is impossible to
+and since $r\le N$, the shown room is $r+1=10$. We can see that it is impossible to use less than 2 presses. Thus the minimum number of presses is $2$.
 
 In the second example, $x=y=3$, so the shown room is already $3$ at the start (with $z=x-1=2$). Therefore, no button press is needed and the answer is $0$.
