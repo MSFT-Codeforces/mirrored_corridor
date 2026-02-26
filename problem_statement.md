@@ -12,7 +12,7 @@ Visitors do not see $z$ directly. The shown room is computed using a mirrored ru
 - If $n = 1$, the shown room is always $1$.
 - Otherwise, let $N = n - 1$, $L = 2N$, and
   $$r = z \bmod L \quad \text{as a value in } [0, L-1]$$
-  (i.e. $r = ((z \% L) + L) \% L$).
+  (i.e. $r = ((z \bmod L) + L) \bmod L$).
   - If $r \le N$, the shown room is $r + 1$.
   - Otherwise, the shown room is $(L - r) + 1$.
 

@@ -48,7 +48,7 @@ Additional edge case consistent with the statement’s definition: when $n=1$, t
 ---
 
 **[section_03]**
-Implementing brute force over press sequences and observing exponential blow-up
+Implementing brute force over press sequences
 **[atomic_03_01]**
 A first naive attempt is to try all sequences of button presses, checking after each sequence whether the shown room becomes $y$, and returning the smallest number of presses found.
 **[atomic_03_02]**
@@ -65,7 +65,7 @@ The failure suggests that we must stop reasoning in terms of press sequences and
 ---
 
 **[section_04]**
-Searching the remainder state graph with BFS and hitting the size limit
+Searching the remainder state graph with BFS
 **[atomic_04_01]**
 A more structured attempt is to represent the system by a finite state that determines the shown room. For $n>1$, the display computation uses $r = z \bmod L$ with $L = 2(n-1)$, so the remainder $r \in [0, L-1]$ can serve as a state.
 **[atomic_04_02]**
@@ -85,7 +85,7 @@ Complexity assessment: worst-case time $O(L)$ and memory $O(L)$. While this is a
 ---
 
 **[section_05]**
-Applying baby-step giant-step to reduce iteration from linear to square-root (still too slow)
+Applying baby-step giant-step to reduce iteration from linear to square-root
 **[atomic_05_01]**
 Since BFS fails due to the huge modulus size, the next idea is to avoid exploring all $L$ states and instead solve the reachability as a modular equation. Reaching a target remainder $t$ from start remainder $s_0$ requires:
 $$s_0 + k \cdot d \equiv t \pmod{L}$$
