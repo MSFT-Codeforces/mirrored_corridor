@@ -29,21 +29,21 @@ Because the displayed room is computed from a modulo-and-reflection rule, multip
 ---
 
 **[section_02]**
-Listing test cases and edge conditions to validate correctness
+Explaining the provided sample test cases and the edge cases they highlight
 **[atomic_02_01]**
-Case $n=1$: the display is permanently room $1$. Inputs must have $x=1$ and $y=1$, and the only correct output is $0$ because the target is already shown.
+Sample 1 input: $n=10, x=2, y=10, d=5$. Here $N=n-1=9$ and $L=2N=18$. The initial hidden coordinate is $z_0=x-1=1$, so the initial remainder is $s_0 = 1 \bmod 18 = 1$.
 **[atomic_02_02]**
-Case $x=y$ for any $n$: the answer must be $0$ because no presses are required. This checks that solutions do not force at least one move.
+For $y=10$, we have $c_y=y-1=9$, so the target remainder(s) are $t_1=9$ and $t_2=(L-c_y)\bmod L=(18-9)\bmod 18=9$. Therefore displaying room $10$ means reaching remainder $9$.
 **[atomic_02_03]**
-Endpoint target rooms: $y=1$ and $y=n$ can behave differently under the reflection rule than middle rooms. Tests should include both endpoints to ensure the mapping is handled consistently.
+Reaching remainder $t=9$ requires $1 + k\cdot 5 \equiv 9 \pmod{18}$, i.e. $k\cdot 5 \equiv 8 \pmod{18}$. Since $\gcd(18,5)=1$, a solution exists. One solution modulo $18$ is $k_0 \equiv 8\cdot 5^{-1} \pmod{18}$; because $5^{-1}\equiv 11 \pmod{18}$, $k_0 \equiv 8\cdot 11 \equiv 16 \pmod{18}$. The minimum presses allow moving in either direction, so the answer is $\min(16, 18-16)=2$; for example, pressing Shift− twice gives $z=1-2\cdot 5=-9$, and $(-9)\bmod 18=9$ so the shown room is $9+1=10$.
 **[atomic_02_04]**
-Large constraints: with $n$ and $d$ up to $10^{18}$ and $t$ up to $2 \cdot 10^5$, tests must include very large values to expose any approach that tries to iterate over room indices or simulate many presses.
+This sample also demonstrates the Note’s key edge condition: intermediate $z$ values can be negative, so the modulo must be normalized to a value in $[0,L-1]$ exactly as defined.
 **[atomic_02_05]**
-Impossible instances: construct cases where stepping by $d$ cannot ever produce a display of $y$. Such tests confirm that the implementation returns $-1$ rather than looping or returning an incorrect finite number.
+Sample 2 input: $n=5, x=3, y=3, d=3$. The initial shown room is already $3$, so no operation is required. The minimum number of presses is $0$.
 **[atomic_02_06]**
-Degenerate movement modulo the corridor period: when $d$ is effectively “no movement” with respect to the mapping’s periodicity, the display will never change from the initial shown room. Tests should include scenarios where the output should be $0$ (if $x=y$) and scenarios where it should be $-1$ (if $x \ne y$).
+This sample highlights the edge case $x=y$ for any $n$: the correct output is $0$ without needing any modular reasoning.
 **[atomic_02_07]**
-Negative hidden coordinates: because Shift− can make $z$ negative, tests should implicitly cover sequences where $z$ crosses below $0$. This validates that modulo normalization is interpreted exactly as defined in the statement.
+Additional edge case consistent with the statement’s definition: when $n=1$, the shown room is always $1$ regardless of $z$, so the minimum presses is $0$ (and the only feasible target is $y=1$).
 
 ---
 
