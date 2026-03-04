@@ -1,39 +1,13 @@
-**1. Problem Understanding**
+The problem is about a hidden integer coordinate $z$ that changes when the visitor presses buttons: Shift+ adds $d$ to $z$, and Shift− subtracts $d$. The visitor never sees $z$. When there is only one room ($n=1$), the display always shows room $1$. For $n>1$ we use $N=n-1$ and $L=2N$. We take $r = z \bmod L$ in the range $[0, L-1]$. The displayed room is $r+1$ when $r \le N$, and $(L-r)+1$ otherwise. The system starts with $z_0 = x-1$ so the shown room is $x$. For each test we need the minimum number of button presses to get the displayed room to $y$, or $-1$ if that is impossible.
 
-A hidden integer coordinate $z$ is updated by button presses:
-- Shift+: $z := z + d$
-- Shift−: $z := z - d$
+**How the solution works**
 
-Visitors do not see $z$ directly. If $n=1$, the shown room is always $1$.
+Only the value of $z \bmod L$ matters when $n>1$, so we work on a cycle of length $L = 2(n-1)$; this is cycleLength in the code. Each press changes the remainder by $+d$ or $-d$ modulo $L$.
 
-If $n>1$, define $N=n-1$, $L=2N$, and let $r=z \bmod L$ normalized into $[0, L-1]$. The shown room is:
-- $r+1$ if $r \le N$
-- $(L-r)+1$ otherwise
+To have the display show room $y$, we set $c = y-1$. The displayed room is $y$ when the remainder is either $t_1 = c$ or $t_2 = (L-c) \bmod L$. In the code these are targetRemainderDirect and targetRemainderMirror.
 
-Initially, the system starts at $z_0=x-1$ (so the shown room is $x$). For each test case, we must find the minimum number of presses to make the shown room equal to $y$, or output $-1$ if it is impossible.
+For each of these target remainders we solve a linear congruence. Starting from startRemainder $= x-1$, reaching remainder $t$ means $k \cdot d \equiv (t - \text{startRemainder}) \pmod{L}$. Let $\text{diff} = (t - \text{startRemainder}) \bmod L$ and $g = \gcd(L, d)$. A solution exists if and only if $\text{diff}$ is divisible by $g$. When it is, we reduce by $g$: $M = L/g$, $d' = d/g$, $\text{diff}' = \text{diff}/g$. With $\gcd(d', M) = 1$ we get the inverse of $d'$ modulo $M$ and then $k_0 \equiv \text{diff}' \cdot (d')^{-1} \pmod{M}$. The forward path needs $k_0$ presses and the backward path needs $M - k_0$, so we take the minimum of the two. We do this for both target remainders and take the smallest result; if neither is reachable we output $-1$. The case $n=1$ is handled separately with answer $0$.
 
-**2. Optimal Approach**
-
-1. **Work modulo the period**: for $n>1$, only $z \bmod L$ matters, where $L=2(n-1)$ (this is `cycleLength` in the code). Each press changes the remainder by $\pm d$ modulo $L$.
-
-2. **Convert the target room into target remainders**: let $c=y-1$.
-   The displayed room equals $y$ when the remainder is either:
-   $$t_1=c,\quad t_2=(L-c)\bmod L$$
-   (these correspond to `targetRemainderDirect` and `targetRemainderMirror`).
-
-3. **Solve a linear congruence for each target remainder**: starting from `startRemainder = x-1`, to reach a target remainder $t$ we need:
-   $$k\cdot d \equiv (t-\text{startRemainder}) \pmod{L}$$
-   Let $\text{diff}=(t-\text{startRemainder})\bmod L$ and $g=\gcd(L,d)$. A solution exists iff $\text{diff} \equiv 0 \pmod{g}$.
-
-4. **Compute minimum presses if reachable**: reduce the equation by $g$:
-   $$M=\frac{L}{g},\quad d'=\frac{d}{g},\quad \text{diff}'=\frac{\text{diff}}{g}$$
-   Since $\gcd(d',M)=1$, compute $(d')^{-1}\bmod M$, and obtain:
-   $$k_0 \equiv \text{diff}'\cdot (d')^{-1} \pmod{M}$$
-   Forward needs $k_0$ presses; backward needs $M-k_0$ presses, so the minimum is $\min(k_0, M-k_0)$.
-
-5. Take the minimum over the two targets; if both are unreachable, output $-1$. Handle $n=1$ separately (answer $0$).
-
-**3. Code**
 ```cpp
 #include <algorithm>
 #include <iostream>
@@ -168,7 +142,8 @@ int main() {
         std::cin >> roomCount >> startRoom >> targetRoom >> stepSize;
 
         if (roomCount == 1) {
-            std::cout << 0 << "\n";
+            std::cout << 0;
+            if (testCaseIndex + 1 < testCaseCount) std::cout << "\n";
             continue;
         }
 
@@ -189,37 +164,18 @@ int main() {
             bestAnswer = -1;
         }
 
-        std::cout << bestAnswer << "\n";
+        std::cout << bestAnswer;
+        if (testCaseIndex + 1 < testCaseCount) std::cout << "\n";
     }
 
     return 0;
 }
 ```
 
-**4. Code Explanation**
+**What the code does**
 
-- The code first handles `roomCount == 1`, where the shown room is always $1$, so the answer is always $0$.
-- For `roomCount > 1`, it sets `cycleLength = 2 * (roomCount - 1)`, and tracks only remainders modulo `cycleLength` because the mirrored display depends only on that.
-- Room `targetRoom` corresponds to two possible target remainders:
-  - `targetRemainderDirect = targetRoom - 1`
-  - `targetRemainderMirror = (cycleLength - (targetRoom - 1)) % cycleLength`
-- For each target remainder, `minimumPressesToReachRemainder(...)`:
-  1. Builds the congruence $k \cdot d \equiv \text{difference} \pmod{L}$.
-  2. Uses $\gcd(L, d)$ to decide if the target is reachable.
-  3. If reachable, reduces the equation and computes a modular inverse via `extendedGcd(...)`.
-  4. Converts the forward solution into the true minimum presses by taking $\min(k_0, M-k_0)$.
+When roomCount is 1 the display is always room 1, so the answer is 0. For more than one room the code sets cycleLength to $2(n-1)$ and works only with remainders modulo cycleLength, since the mirrored display depends only on that. Room targetRoom can be shown when the remainder is either targetRemainderDirect (i.e. $y-1$) or targetRemainderMirror ($(L - (y-1)) \bmod L$).
 
-Example (from the sample): $n=10, x=2, y=9, d=3$  
-Here $L=2(10-1)=18$, `startRemainder = 1`, `targetRemainderDirect = 8`, `targetRemainderMirror = 10`.  
-For `targetRemainderDirect`, $\text{difference}=(8-1)\bmod 18=7$, but $\gcd(18,3)=3$ does not divide $7$, so it is unreachable.  
-For `targetRemainderMirror`, $\text{difference}=(10-1)\bmod 18=9$, and $3$ divides $9$, so it is reachable; the computed minimum presses is $3$, matching the sample output.
+The function minimumPressesToReachRemainder sets up the congruence $k \cdot d \equiv \text{difference} \pmod{L}$, uses $\gcd(L, d)$ to check reachability, and when reachable reduces the equation and uses extendedGcd to get a modular inverse. It then turns the forward solution into the actual minimum presses by taking $\min(k_0, M - k_0)$. For the first sample we have $n=10$, $x=2$, $y=10$, $d=5$, so $L=18$, startRemainder $= 1$, and room 10 corresponds to remainder 9. So targetRemainderDirect and targetRemainderMirror are both 9. We need $1 + k \cdot 5 \equiv 9 \pmod{18}$, i.e. $k \cdot 5 \equiv 8 \pmod{18}$. Since $\gcd(18,5)=1$ a solution exists, and the minimum presses is $\min(k_0, 18 - k_0) = 2$, which matches the sample output.
 
-**5. Time and Space Complexity**
-
-Per test case:
-- Time complexity: $O(\log n)$ (a constant number of $\gcd$ and extended Euclid computations).
-- Space complexity: $O(1)$ extra space.
-
-**6. Conclusion**
-
-The solution converts the mirrored corridor behavior into modular movement on a cycle and reduces the task to solving a linear congruence. Using $\gcd$ for reachability and modular inverses for the step count yields a fast $O(\log n)$ method that works within the very large constraints.
+Time and space per test case are $O(\log n)$ and $O(1)$: a fixed number of gcd and extended Euclid steps, no extra storage. The solution models the corridor as movement on a cycle modulo $L$ and solves the resulting linear congruences with gcd and modular inverses to get an $O(\log n)$ method that fits the given constraints.
